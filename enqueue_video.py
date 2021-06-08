@@ -1,10 +1,11 @@
-"""This service allows to write new channels to db"""
+"""This service allows to enqueu videos to parse"""
 import os
 import sys
 import time
 from rq import Worker, Queue, Connection
 from methods.connection import get_redis, await_job
 
+r = get_redis()
 
 def enqueue_video(video):
     """Enqueues video to parse"""
@@ -35,8 +36,6 @@ def enqueue_video(video):
 
 
 if __name__ == '__main__':
-    time.sleep(5)
-    r = get_redis()
     q = Queue('enqueue_video', connection=r)
     with Connection(r):
         worker = Worker([q], connection=r,  name='enqueue_video')
