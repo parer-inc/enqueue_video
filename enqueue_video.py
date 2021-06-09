@@ -12,28 +12,30 @@ def enqueue_video(video):
     result = False
     for i in range(4):
         q = Queue('get_videos', connection=r)
-        job = q.enqueue('get_videos.get_videos', video)
+        job = q.enqueue('get_videos.get_videos', "WHERE", 'id', video)
         await_job(job)
         result = job.result
-        if result:
+        if result is not False:
             break
         time.sleep(5)
     vid_type = "upd" if result != () else "new"
-    await_job(job, 1800)
-    result = job.result
-    if result:
+    if result is not False:
         q = Queue('parse_video', connection=r)
         if vid_type == "new":
-            job = q.enqueue('parse_video.parse_video', video) # with comments
+            job = q.enqueue('parse_video.parse_video', video, coms=True) # with comments
+            await_job(job, 18000)
+            print(job.result)
             q = Queue('write_videos', connection=r)
-            job = q.enqueue('write_videos.write_videos', result)
+            job = q.enqueue('write_videos.write_videos', job.result)
         else:
             job = q.enqueue('parse_video.parse_video', video) # no comments
+            await_job(job, 18000)
+            print(job.result)
             q = Queue('update_videos', connection=r)
-            job = q.enqueue('update_videos.update_videos', result)
+            job = q.enqueue('update_videos.update_videos', job.result)
     else:
         return False
-
+    return True
 
 if __name__ == '__main__':
     q = Queue('enqueue_video', connection=r)
