@@ -7,7 +7,8 @@ from methods.connection import get_redis, await_job
 
 r = get_redis()
 
-def enqueue_video(video):
+
+def enqueue_video(video, chan_id):
     """Enqueues video to parse"""
     result = False
     for i in range(4):
@@ -22,20 +23,29 @@ def enqueue_video(video):
     if result is not False:
         q = Queue('parse_video', connection=r)
         if vid_type == "new":
-            job = q.enqueue('parse_video.parse_video', video, coms=True) # with comments
+            job = q.enqueue('parse_video.parse_video', video, chan_id, coms=True) # with comments
             await_job(job, 18000)
-            print(job.result)
-            q = Queue('write_videos', connection=r)
-            job = q.enqueue('write_videos.write_videos', job.result)
+            res = job.result
+            print(res)
+            if res:
+                q = Queue('write_videos', connection=r)
+                job = q.enqueue('write_videos.write_videos', job.result)
+            else:
+                return False
         else:
-            job = q.enqueue('parse_video.parse_video', video) # no comments
+            job = q.enqueue('parse_video.parse_video', video, chan_id) # no comments
             await_job(job, 18000)
-            print(job.result)
-            q = Queue('update_videos', connection=r)
-            job = q.enqueue('update_videos.update_videos', job.result)
+            res = job.result
+            print(res)
+            if res:
+                q = Queue('update_videos', connection=r)
+                job = q.enqueue('update_videos.update_videos', job.result)
+            else:
+                return False
     else:
         return False
     return True
+
 
 if __name__ == '__main__':
     q = Queue('enqueue_video', connection=r)
