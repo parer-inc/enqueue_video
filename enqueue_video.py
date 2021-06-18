@@ -26,20 +26,20 @@ def enqueue_video(video, chan_id):
             job = q.enqueue('parse_video.parse_video', video, chan_id, coms=True) # with comments
             await_job(job, 18000)
             res = job.result
-            print(res)
+            # print(res)
             if res:
                 q = Queue('write_videos', connection=r)
-                job = q.enqueue('write_videos.write_videos', job.result)
+                job = q.enqueue('write_videos.write_videos', [res])
             else:
                 return False
         else:
             job = q.enqueue('parse_video.parse_video', video, chan_id) # no comments
             await_job(job, 18000)
             res = job.result
-            print(res)
+            # print(res)
             if res:
                 q = Queue('update_videos', connection=r)
-                job = q.enqueue('update_videos.update_videos', job.result)
+                job = q.enqueue('update_videos.update_videos', res)
             else:
                 return False
     else:
